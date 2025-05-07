@@ -248,7 +248,7 @@ class BaseSession(
             )
 
             # request read timeout takes precedence over session read timeout
-            timeout = None
+            timeout = 10
             if request_read_timeout_seconds is not None:
                 timeout = request_read_timeout_seconds.total_seconds()
             elif self._session_read_timeout_seconds is not None:

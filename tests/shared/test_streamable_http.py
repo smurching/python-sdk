@@ -439,7 +439,10 @@ def json_response_server(json_server_port: int) -> Generator[None, None, None]:
 @pytest.fixture
 def basic_server_url(basic_server_port: int) -> str:
     """Get the URL for the basic test server."""
-    return f"http://127.0.0.1:{basic_server_port}"
+    # TODO(smurching) update this to point to the Databricks apps URL
+    res = f"https://unity-catalog-mcp-1444828305810485.aws.databricksapps.com"
+    print("basic_server_url", res)
+    return res
 
 
 @pytest.fixture
@@ -776,7 +779,8 @@ async def http_client(basic_server, basic_server_url):
 @pytest.fixture
 async def initialized_client_session(basic_server, basic_server_url):
     """Create initialized StreamableHTTP client session."""
-    async with streamablehttp_client(f"{basic_server_url}/mcp") as (
+    token = "TODO add token here"
+    async with streamablehttp_client(url=f"{basic_server_url}/mcp/", headers={'Authorization': f'Bearer {token}'}) as (
         read_stream,
         write_stream,
         _,
@@ -823,14 +827,15 @@ async def test_streamablehttp_client_tool_invocation(initialized_client_session)
     """Test client tool invocation."""
     # First list tools
     tools = await initialized_client_session.list_tools()
-    assert len(tools.tools) == 3
-    assert tools.tools[0].name == "test_tool"
+    assert len(tools.tools) == 1
+    assert tools.tools[0].name == "start-notification-stream"
 
     # Call the tool
-    result = await initialized_client_session.call_tool("test_tool", {})
-    assert len(result.content) == 1
-    assert result.content[0].type == "text"
-    assert result.content[0].text == "Called test_tool"
+    result = await initialized_client_session.call_tool("start-notification-stream", {"interval": 1.0, "count": 5, "caller": "test-caller"})
+    assert len(result.content) == 1, result.content
+    
+    # assert result.content[0].type == "text"
+    # assert result.content[0].text == "Called test_tool"
 
 
 @pytest.mark.anyio

@@ -1,0 +1,9 @@
+command: [
+ "uv",
+ "run",
+ "mcp-simple-streamablehttp",
+ "--port",
+ "8000",
+ "--log-level",
+ "DEBUG"
+]

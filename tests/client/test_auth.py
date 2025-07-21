@@ -208,7 +208,7 @@ class TestOAuthFlow:
             return "test_auth_code", "test_state"
 
         provider = OAuthClientProvider(
-            server_url="https://api.example.com",
+            server_url="https://api.example.com/api/2.0/mcp",
             client_metadata=client_metadata,
             storage=mock_storage,
             redirect_handler=redirect_handler,

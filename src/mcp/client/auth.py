@@ -233,9 +233,16 @@ class OAuthClientProvider(httpx.Auth):
         url = self._extract_resource_metadata_from_www_auth(init_response)
 
         if not url:
-            # Fallback to well-known discovery
-            auth_base_url = self.context.get_authorization_base_url(self.context.server_url)
-            url = urljoin(auth_base_url, "/.well-known/oauth-protected-resource")
+            # Fallback to well-known discovery with path component included
+            parsed = urlparse(self.context.server_url)
+            auth_base_url = f"{parsed.scheme}://{parsed.netloc}"
+
+            if parsed.path and parsed.path != "/":
+                # Include path component in the well-known URL
+                path_component = parsed.path.rstrip("/")
+                url = urljoin(auth_base_url, f"/.well-known/oauth-protected-resource{path_component}")
+            else:
+                url = urljoin(auth_base_url, "/.well-known/oauth-protected-resource")
 
         return httpx.Request("GET", url, headers={MCP_PROTOCOL_VERSION: LATEST_PROTOCOL_VERSION})
 

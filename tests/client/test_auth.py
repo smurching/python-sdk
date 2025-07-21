@@ -222,7 +222,7 @@ class TestOAuthFlow:
 
         request = await provider._discover_protected_resource(init_response)
         assert request.method == "GET"
-        assert str(request.url) == "https://api.example.com/.well-known/oauth-protected-resource"
+        assert str(request.url) == "https://api.example.com/.well-known/oauth-protected-resource/api/2.0/mcp"
         assert "mcp-protocol-version" in request.headers
 
         # Test with WWW-Authenticate header

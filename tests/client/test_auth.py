@@ -198,8 +198,8 @@ class TestOAuthFlow:
     """Test OAuth flow methods."""
 
     @pytest.mark.anyio
-    async def test_discover_protected_resource_request(self, client_metadata, mock_storage):
-        """Test protected resource discovery request building maintains backward compatibility."""
+    async def test_protected_resource_discovery_urls(self, client_metadata, mock_storage):
+        """Test protected resource discovery URL generation with fallback."""
 
         async def redirect_handler(url: str) -> None:
             pass
@@ -207,6 +207,7 @@ class TestOAuthFlow:
         async def callback_handler() -> tuple[str, str | None]:
             return "test_auth_code", "test_state"
 
+        # Test with path component
         provider = OAuthClientProvider(
             server_url="https://api.example.com/api/2.0/mcp",
             client_metadata=client_metadata,
@@ -215,25 +216,23 @@ class TestOAuthFlow:
             callback_handler=callback_handler,
         )
 
-        # Test without WWW-Authenticate (fallback)
-        init_response = httpx.Response(
-            status_code=401, headers={}, request=httpx.Request("GET", "https://request-api.example.com")
+        urls = provider._get_protected_resource_discovery_urls()
+        assert urls == [
+            "https://api.example.com/.well-known/oauth-protected-resource/api/2.0/mcp",
+            "https://api.example.com/.well-known/oauth-protected-resource",
+        ]
+
+        # Test without path component
+        provider = OAuthClientProvider(
+            server_url="https://api.example.com",
+            client_metadata=client_metadata,
+            storage=mock_storage,
+            redirect_handler=redirect_handler,
+            callback_handler=callback_handler,
         )
 
-        request = await provider._discover_protected_resource(init_response)
-        assert request.method == "GET"
-        assert str(request.url) == "https://api.example.com/.well-known/oauth-protected-resource/api/2.0/mcp"
-        assert "mcp-protocol-version" in request.headers
-
-        # Test with WWW-Authenticate header
-        init_response.headers["WWW-Authenticate"] = (
-            'Bearer resource_metadata="https://prm.example.com/.well-known/oauth-protected-resource/path"'
-        )
-
-        request = await provider._discover_protected_resource(init_response)
-        assert request.method == "GET"
-        assert str(request.url) == "https://prm.example.com/.well-known/oauth-protected-resource/path"
-        assert "mcp-protocol-version" in request.headers
+        urls = provider._get_protected_resource_discovery_urls()
+        assert urls == ["https://api.example.com/.well-known/oauth-protected-resource"]
 
     @pytest.mark.anyio
     def test_create_oauth_metadata_request(self, oauth_provider):
